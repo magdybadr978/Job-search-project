@@ -5,6 +5,7 @@ import { StatusCodes } from "http-status-codes";
 import { ErrorClass } from "../../utils/errorClass.js";
 import applicationModel from "../../../DB/models/application.model.js";
 import cloudinaryConnection from "../../utils/cloudinary.js";
+import ApiResponse from "../../utils/response.js";
 
 // ================= add Company ================
 export const addCompany = async (req, res, next) => {
@@ -18,7 +19,7 @@ export const addCompany = async (req, res, next) => {
     numberOfEmployees,
   } = req.body;
   // get user data from middleware (auth)
-  const { _id:company_HR} = req.authUser; // const company_HR = req.authUser._id
+  const { _id: company_HR } = req.authUser; // const company_HR = req.authUser._id
   // find with companyName
   const isCompanyNameExists = await companyModel.findOne({ companyName });
   // check if companyName exist
@@ -46,11 +47,12 @@ export const addCompany = async (req, res, next) => {
     return next(new ErrorClass("Creation Failed", StatusCodes.BAD_REQUEST));
   }
   // send response
-  return res.status(201).json({
-    success: true,
-    message: "done",
-    newCompany
-  });
+  return ApiResponse.success(res, newCompany);
+  // return res.status(201).json({
+  //   success: true,
+  //   message: "done",
+  //   newCompany
+  // });
 };
 
 // ================= Deconste Company ================
@@ -72,26 +74,26 @@ export const deleteCompany = async (req, res, next) => {
     );
   }
   // delete jobs of this company
-  const jobs = await jobModel.find({ addBy : _id });
-  
-  let jobIdsArr =[]
+  const jobs = await jobModel.find({ addBy: _id });
+
+  let jobIdsArr = [];
   for (let job of jobs) {
     // delete applications
-    /**@todo you can use In operator to delete array of Ids*/ 
+    /**@todo you can use In operator to delete array of Ids*/
     // await applicationModel.deleteMany({ jobId :job._id });
-    jobIdsArr.push(job._id)
+    jobIdsArr.push(job._id);
     //delete applications from cloudinary
-    const folderName = `Jobs/jobID-${(job._id).toString()}`;
+    const folderName = `Jobs/jobID-${job._id.toString()}`;
     await cloudinaryConnection().api.delete_resources_by_prefix(folderName);
     await cloudinaryConnection().api.delete_folder(folderName);
   }
-  
-  
-  await jobModel.deleteMany({_id :{$in:jobIdsArr}});
-  await applicationModel.deleteMany({ jobId :{$in:jobIdsArr} });
+
+  await jobModel.deleteMany({ _id: { $in: jobIdsArr } });
+  await applicationModel.deleteMany({ jobId: { $in: jobIdsArr } });
 
   //send response
-  res.status(200).json({ success: true, message: "done" });
+  return ApiResponse.success(res, null);
+  //res.status(200).json({ success: true, message: "done" });
 };
 
 // ================= Update Company ================
@@ -138,9 +140,10 @@ export const updateCompany = async (req, res, next) => {
   if (!updatedCompany) {
     return next(new ErrorClass("Failed", StatusCodes.BAD_REQUEST));
   }
-  return res
-    .status(200)
-    .json({ success: true, message: "done", updatedCompany });
+  return ApiResponse.success(res, updatedCompany);
+  // return res
+  //   .status(200)
+  //   .json({ success: true, message: "done", updatedCompany });
 };
 
 // ================= Get Company Data ================
@@ -164,7 +167,8 @@ export const getCompanyData = async (req, res, next) => {
     company.jobs = jobs;
   }
   // send response
-  return res.status(200).json({ success: true, message: "done", companyData });
+  return ApiResponse.success(res, companyData);
+  //return res.status(200).json({ success: true, message: "done", companyData });
 };
 
 // =================Search For A Company ================
@@ -177,7 +181,8 @@ export const serachForAcompany = async (req, res, next) => {
   if (!findCompany)
     return next(new ErrorClass("Company not found", StatusCodes.NOT_FOUND));
   // send response
-  res.status(200).json({ success: true, message: "done", findCompany });
+  return ApiResponse.success(res, findCompany);
+  //  res.status(200).json({ success: true, message: "done", findCompany });
 };
 
 // ================= See Job Applications ================
@@ -227,5 +232,6 @@ export const getJobApplications = async (req, res, next) => {
   if (appliers.length == 0) {
     return res.status(404).json({ message: "No Appliers For Jobs Right Now" });
   }
-  return res.status(200).json({ message: "Company Data", appliers });
+  return ApiResponse.success(res, appliers);
+  //return res.status(200).json({ message: "Company Data", appliers });
 };
