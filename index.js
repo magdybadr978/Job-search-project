@@ -12,7 +12,7 @@ config({path: './config/dev.config.env'})
 
 const app = express()
 
-const port = process.env.PORT
+const port = process.env.PORT || 5000
 
 app.use(express.json())
 
