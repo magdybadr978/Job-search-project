@@ -9,6 +9,7 @@ import applicationModel from "../../../DB/models/application.model.js";
 import cloudinaryConnection from "../../utils/cloudinary.js";
 import moment from "moment";
 import generateUniqueString from "../../utils/generateUniqueString.js";
+import ApiResponse from "../../utils/response.js";
 
 // ============= Sign Up ================
 export const signUp = async (req, res, next) => {
@@ -46,24 +47,20 @@ export const signUp = async (req, res, next) => {
   const newUser = await userModel.create({
     firstName,
     lastName,
-    // userName: firstName + " " + lastName, 
     email,
     recoveryEmail,
     password: hashPassword,
     role,
     mobileNumber,
-    dateOfBirth : moment(dateOfBirth).format('YYYY-MM-DD'),
-    hintForPassword
+    dateOfBirth: moment(dateOfBirth).format("YYYY-MM-DD"),
+    hintForPassword,
   });
   // failed to create
   if (!newUser) {
     return next(new ErrorClass("Creation Failed", StatusCodes.BAD_REQUEST));
   }
   // send response
-  return res.status(StatusCodes.CREATED).json({
-    success: true,
-    message: "done",
-  });
+  return ApiResponse.success(res,newUser)
 };
 
 // ============= Login ================
@@ -100,7 +97,7 @@ export const logIn = async (req, res, next) => {
   isUserExist.status = userStatus.Online;
   isUserExist.save();
   // send response
-  res.status(200).json({ success: true, message: "done", token });
+  return ApiResponse.success(res,token)
 };
 
 // ============= Update Account ================
@@ -114,28 +111,28 @@ export const updateAccount = async (req, res, next) => {
     RecoveryEmail,
     firstName,
     lastName,
-    userName ,
-    dateOfBirth
+    userName,
+    dateOfBirth,
   } = req.body;
   const userData = await userModel.findById(_id);
   // check if email or mobile exist before
-    const isUserExist = await userModel.findOne({
-      $or: [{ email }, { mobileNumber }],
-    });
-    // if exist
-    if (isUserExist)
-      return next(
-        new ErrorClass("Email or mobile exist before", StatusCodes.CONFLICT)
-      );
-  
+  const isUserExist = await userModel.findOne({
+    $or: [{ email }, { mobileNumber }],
+  });
+  // if exist
+  if (isUserExist)
+    return next(
+      new ErrorClass("Email or mobile exist before", StatusCodes.CONFLICT)
+    );
+
   // check if update first name
-  if(firstName){
+  if (firstName) {
     userData.firstName = firstName || userData.firstName;
   }
-  if(lastName){
+  if (lastName) {
     userData.lastName = lastName || userData.lastName;
   }
-  userData.userName = `${userData.firstName} ${userData.lastName}`
+  userData.userName = `${userData.firstName} ${userData.lastName}`;
   await userData.save();
   // update user data
   const updatedUser = await userModel.findByIdAndUpdate(
@@ -144,7 +141,7 @@ export const updateAccount = async (req, res, next) => {
       email,
       mobileNumber,
       RecoveryEmail,
-      dateOfBirth
+      dateOfBirth,
     },
     { new: true }
   );
@@ -152,7 +149,7 @@ export const updateAccount = async (req, res, next) => {
   if (!updatedUser)
     return next(new ErrorClass("user not found", StatusCodes.BAD_REQUEST));
   // send response
-  res.status(201).json({ success: true, message: "done" });
+  return ApiResponse.success(res,updatedUser)
 };
 
 // ============= Delete Account ================
@@ -165,21 +162,21 @@ export const deleteAccount = async (req, res, next) => {
   if (!findUser)
     return next(new ErrorClass("user not found", StatusCodes.NOT_FOUND));
   // delete applications of this user
-  
+
   /**@todo deleteMany */
-   const findApp = await applicationModel.findOneAndDelete({applierId : _id})
+  const findApp = await applicationModel.findOneAndDelete({ applierId: _id });
   // if true
-  if(findApp){
+  if (findApp) {
     // delete applications from cloudinary
     //const folderName = `Jobs/jobID-${findApp.jobId}/userId-${_id}`
-     const name = generateUniqueString();
-     const folderName = `user-${name}` 
+    const name = generateUniqueString();
+    const folderName = `user-${name}`;
     /**@todo use public_id for each application, don't forget to delete the file name  */
-     await cloudinaryConnection().api.delete_resources_by_prefix(folderName);
-     await cloudinaryConnection().api.delete_folder(folderName);
+    await cloudinaryConnection().api.delete_resources_by_prefix(folderName);
+    await cloudinaryConnection().api.delete_folder(folderName);
   }
   // send response
-  res.status(200).json({ success: true, message: "done" });
+  return ApiResponse.success(res, null);
 };
 
 // ============= Get Account info ================
@@ -192,7 +189,7 @@ export const getAccInfo = async (req, res, next) => {
   if (!user)
     return next(new ErrorClass("user not found", StatusCodes.NOT_FOUND));
   // send response
-  res.status(200).json({ success: true, message: "done", user });
+  return ApiResponse.success(res, user);
 };
 
 // ============= Get Another Account info ================
@@ -205,7 +202,7 @@ export const getAnotherAccInfo = async (req, res, next) => {
   if (!user)
     return next(new ErrorClass("user not found", StatusCodes.NOT_FOUND));
   // send response
-  res.status(200).json({ success: true, message: "done", user });
+  return ApiResponse.success(res, user);
 };
 
 //========================  Update Password =====================
@@ -222,7 +219,7 @@ export const UpdatePassword = async (req, res, next) => {
   // compare oldPassword
   const oldPasswordCheck = bcryptjs.compareSync(
     oldPassword,
-    isUserExist.password 
+    isUserExist.password
   );
   // failed
   if (!oldPasswordCheck) {
@@ -240,7 +237,7 @@ export const UpdatePassword = async (req, res, next) => {
     return next(new ErrorClass("failed to update", StatusCodes.BAD_REQUEST));
   }
   // send response
-  res.status(201).json({ success: true, message: "done" });
+  return ApiResponse.success(res, null);
 };
 
 //========================  Forget Password =====================
@@ -261,7 +258,7 @@ export const forgetPassword = async (req, res, next) => {
   // add data with method save
   await isUserExist.save();
   // send response
-  res.status(200).json({ success: true, message: "done", encryptedOTP });
+  return ApiResponse.success(res, encryptedOTP);
 };
 
 //=======================verify OTP=============================
@@ -279,10 +276,7 @@ export const verifyOTP = async (req, res, next) => {
   if (!OTPVerify)
     return next(new ErrorClass("OTP not verify", StatusCodes.BAD_REQUEST));
   // send response
-  return res.status(200).json({
-    success: true,
-    message: "done",
-  });
+  return ApiResponse.success(res, null);
 };
 
 //========================  Reset Password =====================
@@ -298,12 +292,9 @@ export const resetPassword = async (req, res, next) => {
     { new: true }
   );
   // failed
-  if(!isUserExist) return next(new ErrorClass("user not found",404))
+  if (!isUserExist) return next(new ErrorClass("user not found", 404));
   // send response
-  return res.status(200).json({
-    success : true ,
-    message : "done"
-  })
+  return ApiResponse.success(res,null)
 };
 
 //========================  Get all with recovery Email  =====================
@@ -316,9 +307,5 @@ export const getAccountsByRecoveryAccount = async (req, res, next) => {
   if (!findUser.length)
     return next(new ErrorClass("no data", StatusCodes.BAD_REQUEST));
   // send response
-  res.status(200).json({
-    success: true,
-    message: "done",
-    findUser,
-  });
+  return ApiResponse.success(res,findUser)
 };
