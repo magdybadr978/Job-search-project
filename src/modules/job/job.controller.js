@@ -5,6 +5,7 @@ import { ErrorClass } from "../../utils/errorClass.js";
 import applicationModel from "../../../DB/models/application.model.js";
 import cloudinaryConnection from "../../utils/cloudinary.js";
 import { populate } from "dotenv";
+import ApiResponse from "../../utils/response.js";
 
 // ================= add Job ================
 export const addJob = async (req, res, next) => {
@@ -42,11 +43,12 @@ export const addJob = async (req, res, next) => {
     return next(new ErrorClass("Creation Failed", StatusCodes.BAD_REQUEST));
   }
   // send response
-  return res.status(201).json({
-    success: true,
-    message: "done",
-    newCompany
-  });
+  return ApiResponse.success(res,newCompany)
+  // return res.status(201).json({
+  //   success: true,
+  //   message: "done",
+  //   newCompany
+  // });
 };
 
 // ================= Update Job ================
@@ -91,7 +93,8 @@ export const updateJob = async (req, res, next) => {
     { new: true }
   );
   //send response
-  return res.status(201).json({ success: true, message: "done" });
+  return ApiResponse.success(res,updatedJob)
+  //return res.status(201).json({ success: true, message: "done" ,updatedJob});
 };
 
 // ================= Deconste Job ================
@@ -119,7 +122,8 @@ export const deleteJob = async (req, res, next) => {
     // delete job
     await jobModel.findByIdAndDelete(jobId);
     // send response
-    return res.status(201).json({ success: true, message: "Job deleted successfully" });
+    return ApiResponse.success(res,null)
+    //return res.status(201).json({ success: true, message: "Job deleted successfully" });
 };
 
 // ================ Get all Jobs with their company’s information. =====================
@@ -140,14 +144,15 @@ export const getJobWithCompanyInfo = async (req, res, next) => {
     }
     CompanyInfoArr = [...companyInfo];
   }
-
+// push data in get all jobs
   getAllJobs.push(CompanyInfoArr);
-
-  res.status(200).json({
-    success: true,
-    message: "done",
-    getAllJobs,
-  });
+// send response
+return ApiResponse.success(res,getAllJobs)
+  // res.status(200).json({
+  //   success: true,
+  //   message: "done",
+  //   getAllJobs,
+  // });
 };
 
 // ================ Get all Jobs for a specific company. =====================
@@ -167,7 +172,8 @@ export const getjobsByCompanyName = async (req, res, next) => {
   if (!getJobs?.length) {
     return next(new ErrorClass("No Jobs For This Company")), { cause: 404 };
   }
-  res.status(200).json({ message: "Success", getJobs });
+  return ApiResponse.success(res,getJobs)
+  //res.status(200).json({ message: "Success", getJobs });
 };
 
 // ================ Get all Jobs that match specific filters  =====================
@@ -199,5 +205,6 @@ export const filterJobs = async (req, res, next) => {
   if (!filterJobs.length) {
     return next(new ErrorClass("there is no jobs" , 404));
   }
-  return res.status(200).json({ success : true , message : "done", filterJobs });
+  return ApiResponse.success(res,filterJobs)
+  //return res.status(200).json({ success : true , message : "done", filterJobs });
 };
